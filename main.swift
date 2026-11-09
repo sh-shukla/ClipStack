@@ -116,7 +116,7 @@ func paste(_ text: String) {
     pb.clearContents()
     pb.setString(text, forType: .string)
     guard AXIsProcessTrusted() else {
-        promptAccessibility()
+        askAccessibility()
         return
     }
     // Give the target app a moment to regain focus before sending ⌘V.
@@ -132,6 +132,32 @@ func paste(_ text: String) {
 
 func promptAccessibility() {
     AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+}
+
+func openAccessibilityPane() {
+    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+}
+
+// Walks the user through the one permission ClipStack needs, with a direct
+// jump into the right Settings pane. The system's own prompt shows at most
+// once per signature, so after updates this alert is the only reliable ask.
+func askAccessibility() {
+    promptAccessibility()
+    NSApp.activate(ignoringOtherApps: true)
+    let a = NSAlert()
+    a.messageText = "Allow ClipStack to paste"
+    a.informativeText = """
+    ClipStack needs Accessibility permission to paste clips for you.
+
+    1. Click “Open System Settings”.
+    2. Turn ClipStack ON under Accessibility.
+
+    After an update, ClipStack may already be listed — toggle it OFF and back ON.
+    Copying and history work without this; only auto-paste needs it.
+    """
+    a.addButton(withTitle: "Open System Settings")
+    a.addButton(withTitle: "Later")
+    if a.runModal() == .alertFirstButtonReturn { openAccessibilityPane() }
 }
 
 func preview(_ text: String) -> String {
@@ -314,12 +340,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                   "Another app already uses it (error \(hotKey.status)). Use the menu bar icon, or change hotKeyCode in main.swift.")
         }
 
-        if !AXIsProcessTrusted() { promptAccessibility() }
+        if !AXIsProcessTrusted() { askAccessibility() }
     }
+
+    @objc private func fixPermissions() { askAccessibility() }
 
     // Rebuilt on every open so it always shows the latest history.
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
+        if !AXIsProcessTrusted() {
+            add(menu, "⚠️ Enable auto-paste (Accessibility)…", #selector(fixPermissions))
+            menu.addItem(.separator())
+        }
         if store.items.isEmpty {
             menu.addItem(withTitle: "No history yet", action: nil, keyEquivalent: "").isEnabled = false
         }

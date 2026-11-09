@@ -23,9 +23,12 @@ swift make-icon.swift      # generates the app icon
 cp -R ClipStack.app /Applications/ && open /Applications/ClipStack.app
 ```
 
-**First run:** macOS asks for Accessibility — turn ClipStack ON in
-**System Settings → Privacy & Security → Accessibility**, then quit and reopen the app once.
-Without it, picking a clip only copies it; it won't auto-paste.
+**First run:** ClipStack asks for everything it needs the moment it starts — an alert explains
+the one permission required (Accessibility, for auto-paste) with an **Open System Settings**
+button that jumps straight to the right pane. Toggle ClipStack ON (after an update: OFF, then ON).
+Until it's granted, the menu bar menu shows a ⚠️ item that reopens the same flow.
+Without it, picking a clip only copies it; it won't auto-paste. If pasting still doesn't work
+after granting, quit and reopen the app once.
 
 ## Usage
 
